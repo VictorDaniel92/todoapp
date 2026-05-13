@@ -3,173 +3,419 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>To-Do App</title>
+  <title>Project Manager</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      --bg: #f0f2f5;
+      --card: #ffffff;
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --danger: #ef4444;
+      --text: #1a1a2e;
+      --muted: #94a3b8;
+      --border: #e2e8f0;
+      --success: #22c55e;
+    }
+
     body {
       font-family: 'Segoe UI', sans-serif;
-      background: #f0f2f5;
+      background: var(--bg);
       min-height: 100vh;
+      color: var(--text);
+    }
+
+    /* ── NAV ── */
+    nav {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      height: 56px;
       display: flex;
-      align-items: flex-start;
-      justify-content: center;
-      padding: 48px 16px;
+      align-items: center;
+      gap: 12px;
     }
+    nav .logo { font-weight: 700; font-size: 1.1rem; color: var(--primary); }
+    nav .breadcrumb { color: var(--muted); font-size: 0.9rem; }
+    nav .breadcrumb span { color: var(--text); font-weight: 500; }
+    nav .back-btn {
+      margin-left: auto;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 14px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      color: var(--text);
+      display: none;
+    }
+    nav .back-btn:hover { background: var(--bg); }
 
+    /* ── LAYOUT ── */
+    .page { display: none; padding: 32px; max-width: 960px; margin: 0 auto; }
+    .page.active { display: block; }
+
+    h1 { font-size: 1.6rem; margin-bottom: 24px; }
+    h2 { font-size: 1.1rem; margin-bottom: 16px; }
+
+    /* ── CARDS ── */
     .card {
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-      padding: 32px;
-      width: 100%;
-      max-width: 480px;
+      background: var(--card);
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      margin-bottom: 16px;
     }
 
-    h1 { font-size: 1.6rem; color: #1a1a2e; margin-bottom: 24px; }
-
+    /* ── INPUT ROW ── */
     .input-row {
       display: flex;
       gap: 8px;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
-
-    input[type="text"] {
+    input[type="text"], textarea {
       flex: 1;
       padding: 10px 14px;
-      border: 2px solid #e2e8f0;
+      border: 2px solid var(--border);
       border-radius: 8px;
-      font-size: 1rem;
+      font-size: 0.95rem;
+      font-family: inherit;
       outline: none;
       transition: border-color 0.2s;
+      resize: vertical;
     }
-    input[type="text"]:focus { border-color: #6366f1; }
+    input[type="text"]:focus, textarea:focus { border-color: var(--primary); }
 
-    button.add-btn {
-      background: #6366f1;
+    button.btn {
+      background: var(--primary);
       color: white;
       border: none;
       border-radius: 8px;
       padding: 10px 18px;
-      font-size: 1rem;
+      font-size: 0.95rem;
       cursor: pointer;
       transition: background 0.2s;
+      white-space: nowrap;
     }
-    button.add-btn:hover { background: #4f46e5; }
+    button.btn:hover { background: var(--primary-dark); }
+    button.btn.danger { background: var(--danger); }
+    button.btn.danger:hover { background: #dc2626; }
+    button.btn.ghost {
+      background: none;
+      color: var(--muted);
+      padding: 6px 10px;
+      font-size: 0.85rem;
+      border: none;
+    }
+    button.btn.ghost:hover { color: var(--danger); }
 
-    ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    /* ── PROJECT LIST ── */
+    .project-card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 20px 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      margin-bottom: 12px;
+      cursor: pointer;
+      transition: box-shadow 0.2s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .project-card:hover { box-shadow: 0 4px 20px rgba(99,102,241,0.15); transform: translateY(-1px); }
+    .project-icon {
+      width: 42px; height: 42px;
+      background: linear-gradient(135deg, var(--primary), #818cf8);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; flex-shrink: 0;
+    }
+    .project-info { flex: 1; }
+    .project-name { font-weight: 600; margin-bottom: 4px; }
+    .project-desc { font-size: 0.85rem; color: var(--muted); }
+    .project-date { font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
 
-    li {
+    /* ── PROJECT DETAIL ── */
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 640px) { .detail-grid { grid-template-columns: 1fr; } }
+
+    /* ── TASK LIST ── */
+    .task-item {
       display: flex;
       align-items: center;
       gap: 10px;
-      background: #f8fafc;
-      border-radius: 8px;
-      padding: 10px 14px;
-      transition: opacity 0.2s;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
     }
+    .task-item:last-child { border-bottom: none; }
+    .task-item.done .task-title { text-decoration: line-through; color: var(--muted); }
+    input[type="checkbox"] { width: 17px; height: 17px; accent-color: var(--primary); cursor: pointer; flex-shrink: 0; }
+    .task-title { flex: 1; font-size: 0.93rem; }
 
-    li.done { opacity: 0.5; }
-    li.done .todo-text { text-decoration: line-through; }
-
-    input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-color: #6366f1; }
-
-    .todo-text { flex: 1; font-size: 0.95rem; color: #374151; }
-
-    button.del-btn {
-      background: none;
-      border: none;
-      color: #94a3b8;
-      font-size: 1.1rem;
-      cursor: pointer;
-      transition: color 0.2s;
-      padding: 2px 6px;
-      border-radius: 4px;
+    /* ── NOTE LIST ── */
+    .note-item {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
     }
-    button.del-btn:hover { color: #ef4444; }
+    .note-item:last-child { border-bottom: none; }
+    .note-content { flex: 1; font-size: 0.9rem; line-height: 1.5; white-space: pre-wrap; }
+    .note-date { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
 
-    .empty { text-align: center; color: #94a3b8; padding: 24px 0; font-size: 0.9rem; }
+    /* ── EMPTY STATE ── */
+    .empty { text-align: center; color: var(--muted); padding: 20px 0; font-size: 0.9rem; }
+
+    /* ── PROJECT HEADER ── */
+    .project-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 28px;
+    }
+    .project-header h1 { margin-bottom: 4px; }
+    .project-header p { color: var(--muted); font-size: 0.9rem; }
   </style>
 </head>
 <body>
+
+<nav>
+  <div class="logo">📋 ProjectHub</div>
+  <div class="breadcrumb" id="breadcrumb"></div>
+  <button class="back-btn" id="backBtn" onclick="showHome()">← Progetti</button>
+</nav>
+
+<!-- ── HOME PAGE ── -->
+<div class="page active" id="homePage">
+  <h1>I tuoi progetti</h1>
+
   <div class="card">
-    <h1>🚀 I miei task</h1>
+    <h2>Nuovo progetto</h2>
     <div class="input-row">
-      <input type="text" id="newTodo" placeholder="Aggiungi un'attività..." />
-      <button class="add-btn" onclick="addTodo()">Aggiungi</button>
+      <input type="text" id="projectName" placeholder="Nome progetto" />
+      <input type="text" id="projectDesc" placeholder="Descrizione (opzionale)" />
+      <button class="btn" onclick="createProject()">Crea</button>
     </div>
-    <ul id="list"></ul>
-    <p class="empty" id="empty" style="display:none">Niente da fare! 🎉</p>
   </div>
 
-  <script>
-    const API = '/api/todos';
+  <div id="projectList"></div>
+</div>
 
-    async function fetchTodos() {
-      const res = await fetch(API);
-      const todos = await res.json();
-      render(todos);
+<!-- ── PROJECT DETAIL PAGE ── -->
+<div class="page" id="detailPage">
+  <div class="project-header">
+    <div>
+      <h1 id="detailName"></h1>
+      <p id="detailDesc"></p>
+    </div>
+    <button class="btn danger" onclick="deleteCurrentProject()">Elimina progetto</button>
+  </div>
+
+  <div class="detail-grid">
+    <!-- Tasks -->
+    <div class="card">
+      <h2>✅ Task</h2>
+      <div class="input-row">
+        <input type="text" id="taskInput" placeholder="Nuovo task..." />
+        <button class="btn" onclick="createTask()">+</button>
+      </div>
+      <div id="taskList"></div>
+    </div>
+
+    <!-- Notes -->
+    <div class="card">
+      <h2>📝 Note</h2>
+      <div class="input-row" style="flex-direction: column;">
+        <textarea id="noteInput" rows="3" placeholder="Scrivi una nota..."></textarea>
+        <button class="btn" style="align-self: flex-end; margin-top: 8px;" onclick="createNote()">Salva nota</button>
+      </div>
+      <div id="noteList"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API = '/api';
+  let currentProject = null;
+
+  // ── NAVIGATION ────────────────────────────────────────────────────────────
+
+  function showHome() {
+    document.getElementById('homePage').classList.add('active');
+    document.getElementById('detailPage').classList.remove('active');
+    document.getElementById('backBtn').style.display = 'none';
+    document.getElementById('breadcrumb').innerHTML = '';
+    currentProject = null;
+    loadProjects();
+  }
+
+  function showDetail(project) {
+    currentProject = project;
+    document.getElementById('homePage').classList.remove('active');
+    document.getElementById('detailPage').classList.add('active');
+    document.getElementById('backBtn').style.display = 'block';
+    document.getElementById('breadcrumb').innerHTML = `/ <span>${escapeHtml(project.name)}</span>`;
+    document.getElementById('detailName').textContent = project.name;
+    document.getElementById('detailDesc').textContent = project.description || '';
+    loadTasks();
+    loadNotes();
+  }
+
+  // ── PROJECTS ──────────────────────────────────────────────────────────────
+
+  async function loadProjects() {
+    const projects = await apiFetch(`${API}/projects`);
+    const list = document.getElementById('projectList');
+
+    if (projects.length === 0) {
+      list.innerHTML = '<p class="empty">Nessun progetto ancora. Creane uno!</p>';
+      return;
     }
 
-    function render(todos) {
-      const list = document.getElementById('list');
-      const empty = document.getElementById('empty');
-      list.innerHTML = '';
+    list.innerHTML = projects.map(p => `
+      <div class="project-card" onclick="showDetail(${JSON.stringify(p).replace(/"/g, '&quot;')})">
+        <div class="project-icon">📁</div>
+        <div class="project-info">
+          <div class="project-name">${escapeHtml(p.name)}</div>
+          <div class="project-desc">${escapeHtml(p.description || 'Nessuna descrizione')}</div>
+        </div>
+        <div class="project-date">${formatDate(p.created_at)}</div>
+      </div>
+    `).join('');
+  }
 
-      if (todos.length === 0) { empty.style.display = 'block'; return; }
-      empty.style.display = 'none';
+  async function createProject() {
+    const name = document.getElementById('projectName').value.trim();
+    const description = document.getElementById('projectDesc').value.trim();
+    if (!name) return;
+    await apiFetch(`${API}/projects`, 'POST', { name, description });
+    document.getElementById('projectName').value = '';
+    document.getElementById('projectDesc').value = '';
+    loadProjects();
+  }
 
-      todos.forEach(todo => {
-        const li = document.createElement('li');
-        if (todo.done) li.classList.add('done');
+  async function deleteCurrentProject() {
+    if (!confirm(`Eliminare "${currentProject.name}"? Task e note verranno eliminati.`)) return;
+    await apiFetch(`${API}/projects/${currentProject.id}`, 'DELETE');
+    showHome();
+  }
 
-        li.innerHTML = `
-          <input type="checkbox" ${todo.done ? 'checked' : ''}
-            onchange="toggleDone('${todo.id}', this.checked)" />
-          <span class="todo-text">${escapeHtml(todo.text)}</span>
-          <button class="del-btn" onclick="deleteTodo('${todo.id}')">✕</button>
-        `;
-        list.appendChild(li);
-      });
+  // ── TASKS ─────────────────────────────────────────────────────────────────
+
+  async function loadTasks() {
+    const tasks = await apiFetch(`${API}/projects/${currentProject.id}/tasks`);
+    const list = document.getElementById('taskList');
+
+    if (tasks.length === 0) {
+      list.innerHTML = '<p class="empty">Nessun task ancora.</p>';
+      return;
     }
 
-    async function addTodo() {
-      const input = document.getElementById('newTodo');
-      const text = input.value.trim();
-      if (!text) return;
-      await fetch(API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text })
-      });
-      input.value = '';
-      fetchTodos();
+    list.innerHTML = tasks.map(t => `
+      <div class="task-item ${t.done ? 'done' : ''}" id="task-${t.id}">
+        <input type="checkbox" ${t.done ? 'checked' : ''}
+          onchange="toggleTask('${t.id}', this.checked)" />
+        <span class="task-title">${escapeHtml(t.title)}</span>
+        <button class="btn ghost" onclick="deleteTask('${t.id}')">✕</button>
+      </div>
+    `).join('');
+  }
+
+  async function createTask() {
+    const input = document.getElementById('taskInput');
+    const title = input.value.trim();
+    if (!title) return;
+    await apiFetch(`${API}/projects/${currentProject.id}/tasks`, 'POST', { title });
+    input.value = '';
+    loadTasks();
+  }
+
+  async function toggleTask(id, done) {
+    await apiFetch(`${API}/tasks/${id}`, 'PATCH', { done });
+    loadTasks();
+  }
+
+  async function deleteTask(id) {
+    await apiFetch(`${API}/tasks/${id}`, 'DELETE');
+    loadTasks();
+  }
+
+  // ── NOTES ─────────────────────────────────────────────────────────────────
+
+  async function loadNotes() {
+    const notes = await apiFetch(`${API}/projects/${currentProject.id}/notes`);
+    const list = document.getElementById('noteList');
+
+    if (notes.length === 0) {
+      list.innerHTML = '<p class="empty">Nessuna nota ancora.</p>';
+      return;
     }
 
-    async function toggleDone(id, done) {
-      await fetch(`${API}/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ done })
-      });
-      fetchTodos();
-    }
+    list.innerHTML = notes.map(n => `
+      <div class="note-item">
+        <div style="flex:1">
+          <div class="note-content">${escapeHtml(n.content)}</div>
+          <div class="note-date">${formatDate(n.created_at)}</div>
+        </div>
+        <button class="btn ghost" onclick="deleteNote('${n.id}')">✕</button>
+      </div>
+    `).join('');
+  }
 
-    async function deleteTodo(id) {
-      await fetch(`${API}/${id}`, { method: 'DELETE' });
-      fetchTodos();
-    }
+  async function createNote() {
+    const input = document.getElementById('noteInput');
+    const content = input.value.trim();
+    if (!content) return;
+    await apiFetch(`${API}/projects/${currentProject.id}/notes`, 'POST', { content });
+    input.value = '';
+    loadNotes();
+  }
 
-    function escapeHtml(str) {
-      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    }
+  async function deleteNote(id) {
+    await apiFetch(`${API}/notes/${id}`, 'DELETE');
+    loadNotes();
+  }
 
-    // Aggiungi con Enter
-    document.getElementById('newTodo').addEventListener('keydown', e => {
-      if (e.key === 'Enter') addTodo();
+  // ── UTILS ─────────────────────────────────────────────────────────────────
+
+  async function apiFetch(url, method = 'GET', body = null) {
+    const opts = {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+    };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(url, opts);
+    if (method !== 'DELETE') return res.json();
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function formatDate(iso) {
+    return new Date(iso).toLocaleDateString('it-IT', {
+      day: '2-digit', month: 'short', year: 'numeric'
     });
+  }
 
-    fetchTodos();
-  </script>
+  // Enter per aggiungere task
+  document.getElementById('taskInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') createTask();
+  });
+  document.getElementById('projectName').addEventListener('keydown', e => {
+    if (e.key === 'Enter') createProject();
+  });
+
+  // Avvio
+  loadProjects();
+</script>
 </body>
 </html>
