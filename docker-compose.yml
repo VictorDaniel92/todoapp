@@ -1,0 +1,32 @@
+services:
+  todoapp:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+      DATABASE_URL: postgresql+asyncpg://todo_user:todo_pass@db:5432/todo_db
+    depends_on:
+      db:
+        condition: service_healthy   # aspetta che Postgres sia pronto
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: todo_user
+      POSTGRES_PASSWORD: todo_pass
+      POSTGRES_DB: todo_db
+    ports:
+      - "5432:5432"                  # utile per connettersi con un client esterno
+    volumes:
+      - postgres_data:/var/lib/postgresql/data   # i dati persistono tra i riavvii!
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U todo_user -d todo_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:                     # volume named — Docker lo gestisce lui
